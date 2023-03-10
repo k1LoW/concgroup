@@ -12,6 +12,7 @@ import (
 	"github.com/k1LoW/concgroup"
 )
 
+//nolint:gosec
 // Original example is https://pkg.go.dev/golang.org/x/sync/errgroup#example-Group-JustErrors
 func ExampleGroup() {
 	cg := new(concgroup.Group)
