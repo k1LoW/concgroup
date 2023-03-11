@@ -26,8 +26,8 @@ func ExampleGroup() {
 		},
 	}
 	for key, ug := range urlgroups {
+		key := key
 		for _, url := range ug {
-			key := key
 			url := url // https://golang.org/doc/faq#closures_and_goroutines
 			cg.Go(key, func() error {
 				// Fetch URL sequentially by key
