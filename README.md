@@ -1,5 +1,7 @@
 # concgroup
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/k1LoW/concgroup.svg)](https://pkg.go.dev/github.com/k1LoW/concgroup) [![CI](https://github.com/k1LoW/concgroup/actions/workflows/ci.yml/badge.svg)](https://github.com/k1LoW/concgroup/actions/workflows/ci.yml) ![Coverage](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/k1LoW/concgroup/coverage.svg) ![Code to Test Ratio](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/k1LoW/concgroup/ratio.svg) ![Test Execution Time](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/k1LoW/concgroup/time.svg)
+
 `concgroup` provides almost the same features to goroutine groups as `golang.org/x/sync/errgroup` but ensures sequential run of goroutines with the same group key.
 
 ## Usage
