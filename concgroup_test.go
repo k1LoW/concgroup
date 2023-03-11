@@ -97,3 +97,54 @@ func TestConcurrencyGroupWithContext(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+func TestConcurrencyGroupWithSetLimit(t *testing.T) {
+	t.Parallel()
+	const loop = 10
+	cg := new(concgroup.Group)
+	cg.SetLimit(1)
+	mu := sync.Mutex{}
+	call := 0
+	for i := 0; i < loop; i++ {
+		cg.Go("samegroup", func() error {
+			if !mu.TryLock() {
+				return errors.New("violate group concurrency")
+			}
+			call++
+			defer mu.Unlock()
+			return nil
+		})
+	}
+	if err := cg.Wait(); err != nil {
+		t.Error(err)
+	}
+	if call != loop {
+		t.Error("Failed to Go")
+	}
+}
+
+func TestConcurrencyGroupWithTryGo(t *testing.T) {
+	t.Parallel()
+	const loop = 10
+	cg := new(concgroup.Group)
+	cg.SetLimit(1)
+	mu := sync.Mutex{}
+	call := 0
+	for i := 0; i < loop; i++ {
+		cg.TryGo("samegroup", func() error {
+			if !mu.TryLock() {
+				return errors.New("violate group concurrency")
+			}
+			call++
+			defer mu.Unlock()
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		})
+	}
+	if err := cg.Wait(); err != nil {
+		t.Error(err)
+	}
+	if call == loop {
+		t.Error("Failed to skip by TryGo")
+	}
+}
