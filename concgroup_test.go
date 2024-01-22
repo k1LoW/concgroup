@@ -148,3 +148,50 @@ func TestConcurrencyGroupWithTryGo(t *testing.T) {
 		t.Error("Failed to skip by TryGo")
 	}
 }
+
+func TestConcurrencyGroupMulti(t *testing.T) {
+	t.Parallel()
+	cg := new(concgroup.Group)
+	mu := sync.Mutex{}
+	for i := 0; i < 10; i++ {
+		keys := []string{"samegroup", fmt.Sprintf("group-%d", i)}
+		cg.GoMulti(keys, func() error {
+			if !mu.TryLock() {
+				return errors.New("violate group concurrency")
+			}
+			defer mu.Unlock()
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		})
+	}
+	if err := cg.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestConcurrencyGroupWithTryGoMulti(t *testing.T) {
+	t.Parallel()
+	const loop = 10
+	cg := new(concgroup.Group)
+	cg.SetLimit(1)
+	mu := sync.Mutex{}
+	call := 0
+	for i := 0; i < loop; i++ {
+		keys := []string{"samegroup", fmt.Sprintf("group-%d", i)}
+		cg.TryGoMulti(keys, func() error {
+			if !mu.TryLock() {
+				return errors.New("violate group concurrency")
+			}
+			call++
+			defer mu.Unlock()
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		})
+	}
+	if err := cg.Wait(); err != nil {
+		t.Error(err)
+	}
+	if call == loop {
+		t.Error("Failed to skip by TryGoMulti")
+	}
+}

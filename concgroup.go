@@ -21,7 +21,7 @@ func WithContext(ctx context.Context) (*Group, context.Context) {
 	return &Group{eg: eg}, ctx
 }
 
-// Go calls the given function in a new goroutine like errgroup.Group.
+// Go calls the given function in a new goroutine like errgroup.Group with key.
 func (g *Group) Go(key string, f func() error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -38,7 +38,30 @@ func (g *Group) Go(key string, f func() error) {
 	})
 }
 
-// TryGo calls the given function only when the number of active goroutines is currently below the configured limit like errgroup.Group.
+// GoMulti calls the given function in a new goroutine like errgroup.Group with multiple key locks.
+func (g *Group) GoMulti(keys []string, f func() error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.init()
+	var mus []*sync.Mutex
+	for _, key := range keys {
+		mu, ok := g.locks[key]
+		if !ok {
+			mu = &sync.Mutex{}
+			g.locks[key] = mu
+		}
+		mus = append(mus, mu)
+	}
+	g.eg.Go(func() error {
+		for _, mu := range mus {
+			mu.Lock()
+			defer mu.Unlock()
+		}
+		return f()
+	})
+}
+
+// TryGo calls the given function only when the number of active goroutines is currently below the configured limit like errgroup.Group with key.
 func (g *Group) TryGo(key string, f func() error) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -51,6 +74,32 @@ func (g *Group) TryGo(key string, f func() error) bool {
 	if !g.eg.TryGo(func() error {
 		mu.Lock()
 		defer mu.Unlock()
+		return f()
+	}) {
+		return false
+	}
+	return true
+}
+
+// TryGoMulti calls the given function only when the number of active goroutines is currently below the configured limit like errgroup.Group with multiple key locks.
+func (g *Group) TryGoMulti(keys []string, f func() error) bool {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.init()
+	var mus []*sync.Mutex
+	for _, key := range keys {
+		mu, ok := g.locks[key]
+		if !ok {
+			mu = &sync.Mutex{}
+			g.locks[key] = mu
+		}
+		mus = append(mus, mu)
+	}
+	if !g.eg.TryGo(func() error {
+		for _, mu := range mus {
+			mu.Lock()
+			defer mu.Unlock()
+		}
 		return f()
 	}) {
 		return false
