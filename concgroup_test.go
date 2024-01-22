@@ -148,3 +148,97 @@ func TestConcurrencyGroupWithTryGo(t *testing.T) {
 		t.Error("Failed to skip by TryGo")
 	}
 }
+
+func TestConcurrencyGroupMulti(t *testing.T) {
+	t.Parallel()
+	cg := new(concgroup.Group)
+	mu := sync.Mutex{}
+	for i := 0; i < 10; i++ {
+		keys := []string{"samegroup", fmt.Sprintf("group-%d", i)}
+		cg.GoMulti(keys, func() error {
+			if !mu.TryLock() {
+				return errors.New("violate group concurrency")
+			}
+			defer mu.Unlock()
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		})
+	}
+	if err := cg.Wait(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestConcurrencyGroupWithTryGoMulti(t *testing.T) {
+	t.Parallel()
+	const loop = 10
+	cg := new(concgroup.Group)
+	cg.SetLimit(1)
+	mu := sync.Mutex{}
+	call := 0
+	for i := 0; i < loop; i++ {
+		keys := []string{"samegroup", fmt.Sprintf("group-%d", i)}
+		cg.TryGoMulti(keys, func() error {
+			if !mu.TryLock() {
+				return errors.New("violate group concurrency")
+			}
+			call++
+			defer mu.Unlock()
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		})
+	}
+	if err := cg.Wait(); err != nil {
+		t.Error(err)
+	}
+	if call == loop {
+		t.Error("Failed to skip by TryGoMulti")
+	}
+}
+
+func TestConcurrencyGroupMultiAvoidDeadlock(t *testing.T) {
+	keys := []string{"A0", "B0", "C0"}
+	var otherKeysA, otherKeysB []string
+	for i := 1; i < 1000; i++ {
+		otherKeysA = append(otherKeysA, fmt.Sprintf("A%d", i))
+		otherKeysB = append(otherKeysB, fmt.Sprintf("B%d", i))
+	}
+	keys = append(keys, otherKeysA...)
+	keys = append(keys, otherKeysB...)
+
+	tests := []struct {
+		name string
+		a    []string
+		b    []string
+	}{
+		{"Same keys", []string{"A0"}, []string{"A0"}},
+		{"Other keys", []string{"A0"}, []string{"B0"}},
+		{"Order of keys in which deadlock is likely to occur in a and b", append(append([]string{"A0"}, otherKeysA...), "B0"), append(append([]string{"B0"}, otherKeysA...), "A0")},
+		{"Order of keys in which deadlock is likely to occur in a and b", append(append([]string{"A0"}, otherKeysA...), "C0"), append(append([]string{"B0"}, otherKeysB...), "C0")},
+		{"Order of keys in which deadlock is likely to occur in a and b", append(append(append([]string{"A0"}, otherKeysA...), otherKeysB...), "C0"), append(append([]string{"B0"}, otherKeysB...), "C0")},
+	}
+	for _, tt := range tests {
+		mu := sync.Mutex{}
+		cg := new(concgroup.Group)
+		mu.Lock()
+		// Lock all keys
+		cg.GoMulti(keys, func() error {
+			mu.Lock()
+			defer mu.Unlock()
+			return nil
+		})
+		// Waiging to lock tt.a
+		cg.GoMulti(tt.a, func() error {
+			return nil
+		})
+		// Waiging to lock tt.b
+		cg.GoMulti(tt.b, func() error {
+			return nil
+		})
+		// Unlock all keys
+		mu.Unlock()
+		if err := cg.Wait(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
