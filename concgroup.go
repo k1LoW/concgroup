@@ -71,14 +71,11 @@ func (g *Group) TryGo(key string, f func() error) bool {
 		mu = &sync.Mutex{}
 		g.locks[key] = mu
 	}
-	if !g.eg.TryGo(func() error {
+	return g.eg.TryGo(func() error {
 		mu.Lock()
 		defer mu.Unlock()
 		return f()
-	}) {
-		return false
-	}
-	return true
+	})
 }
 
 // TryGoMulti calls the given function only when the number of active goroutines is currently below the configured limit like errgroup.Group with multiple key locks.
@@ -95,16 +92,13 @@ func (g *Group) TryGoMulti(keys []string, f func() error) bool {
 		}
 		mus = append(mus, mu)
 	}
-	if !g.eg.TryGo(func() error {
+	return g.eg.TryGo(func() error {
 		for _, mu := range mus {
 			mu.Lock()
 			defer mu.Unlock()
 		}
 		return f()
-	}) {
-		return false
-	}
-	return true
+	})
 }
 
 // SetLimit limits the number of active goroutines in this group to at most n like errgroup.Group.
