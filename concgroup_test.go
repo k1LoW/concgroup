@@ -197,21 +197,22 @@ func TestConcurrencyGroupWithTryGoMulti(t *testing.T) {
 }
 
 func TestConcurrencyGroupMultiAvoidDeadlock(t *testing.T) {
-	keys := []string{"A", "B", "C"}
-	var otherKeys []string
-	for i := 0; i < 1000; i++ {
-		otherKeys = append(otherKeys, fmt.Sprintf("other-%d", i))
+	keys := []string{"A0", "B0", "C0"}
+	var otherKeysA []string
+	for i := 1; i < 1000; i++ {
+		otherKeysA = append(otherKeysA, fmt.Sprintf("A%d", i))
 	}
-	keys = append(keys, otherKeys...)
+	keys = append(keys, otherKeysA...)
 
 	tests := []struct {
 		name string
 		a    []string
 		b    []string
 	}{
-		{"Same keys", []string{"A"}, []string{"A"}},
-		{"Other keys", []string{"A"}, []string{"B"}},
-		{"Order of keys in which deadlock is likely to occur in A and B", append(append([]string{"A"}, otherKeys...), "B"), append(append([]string{"B"}, otherKeys...), "A")},
+		{"Same keys", []string{"A0"}, []string{"A0"}},
+		{"Other keys", []string{"A0"}, []string{"B0"}},
+		{"Order of keys in which deadlock is likely to occur in a and b", append(append([]string{"A0"}, otherKeysA...), "B0"), append(append([]string{"B0"}, otherKeysA...), "A0")},
+		{"Order of keys in which deadlock is likely to occur in a and b", append(append([]string{"A0"}, otherKeysA...), "C0"), append(append([]string{"B0"}, otherKeysA...), "C0")},
 	}
 	for _, tt := range tests {
 		mu := sync.Mutex{}
