@@ -195,3 +195,46 @@ func TestConcurrencyGroupWithTryGoMulti(t *testing.T) {
 		t.Error("Failed to skip by TryGoMulti")
 	}
 }
+
+func TestConcurrencyGroupMultiAvoidDeadlock(t *testing.T) {
+	keys := []string{"A", "B", "C"}
+	var otherKeys []string
+	for i := 0; i < 1000; i++ {
+		otherKeys = append(otherKeys, fmt.Sprintf("other-%d", i))
+	}
+	keys = append(keys, otherKeys...)
+
+	tests := []struct {
+		name string
+		a    []string
+		b    []string
+	}{
+		{"Same keys", []string{"A"}, []string{"A"}},
+		{"Other keys", []string{"A"}, []string{"B"}},
+		{"Order of keys in which deadlock is likely to occur in A and B", append(append([]string{"A"}, otherKeys...), "B"), append(append([]string{"B"}, otherKeys...), "A")},
+	}
+	for _, tt := range tests {
+		mu := sync.Mutex{}
+		cg := new(concgroup.Group)
+		mu.Lock()
+		// Lock all keys
+		cg.GoMulti(keys, func() error {
+			mu.Lock()
+			defer mu.Unlock()
+			return nil
+		})
+		// Waiging to lock tt.a
+		cg.GoMulti(tt.a, func() error {
+			return nil
+		})
+		// Waiging to lock tt.b
+		cg.GoMulti(tt.b, func() error {
+			return nil
+		})
+		// Unlock all keys
+		mu.Unlock()
+		if err := cg.Wait(); err != nil {
+			t.Fatal(err)
+		}
+	}
+}

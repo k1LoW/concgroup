@@ -2,6 +2,7 @@ package concgroup
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
@@ -43,6 +44,7 @@ func (g *Group) GoMulti(keys []string, f func() error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.init()
+	sort.Strings(keys)
 	var mus []*sync.Mutex
 	for _, key := range keys {
 		mu, ok := g.locks[key]
@@ -83,6 +85,7 @@ func (g *Group) TryGoMulti(keys []string, f func() error) bool {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	g.init()
+	sort.Strings(keys)
 	var mus []*sync.Mutex
 	for _, key := range keys {
 		mu, ok := g.locks[key]
