@@ -215,6 +215,7 @@ func TestConcurrencyGroupMultiAvoidDeadlock(t *testing.T) {
 		{"Other keys", []string{"A0"}, []string{"B0"}},
 		{"Order of keys in which deadlock is likely to occur in a and b", append(append([]string{"A0"}, otherKeysA...), "B0"), append(append([]string{"B0"}, otherKeysA...), "A0")},
 		{"Order of keys in which deadlock is likely to occur in a and b", append(append([]string{"A0"}, otherKeysA...), "C0"), append(append([]string{"B0"}, otherKeysB...), "C0")},
+		{"Order of keys in which deadlock is likely to occur in a and b", append(append(append([]string{"A0"}, otherKeysA...), otherKeysB...), "C0"), append(append([]string{"B0"}, otherKeysB...), "C0")},
 	}
 	for _, tt := range tests {
 		mu := sync.Mutex{}
