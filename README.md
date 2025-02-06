@@ -29,7 +29,6 @@ func main() {
 		},
 	}
 	for key, ug := range urlgroups {
-	    key := key
 		for _, url := range ug {
 			url := url // https://golang.org/doc/faq#closures_and_goroutines
 			cg.Go(key, func() error {
