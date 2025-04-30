@@ -1,5 +1,7 @@
 # Changelog
 
+## [v1.1.1](https://github.com/k1LoW/concgroup/compare/v1.1.0...v1.1.1) - 2025-04-30
+
 ## [v1.1.0](https://github.com/k1LoW/concgroup/compare/v1.0.0...v1.1.0) - 2024-01-22
 - Support multiple keys by @k1LoW in https://github.com/k1LoW/concgroup/pull/4
 
