@@ -26,9 +26,7 @@ func ExampleGroup() {
 		},
 	}
 	for key, ug := range urlgroups {
-		key := key
 		for _, url := range ug {
-			url := url // https://golang.org/doc/faq#closures_and_goroutines
 			cg.Go(key, func() error {
 				// Fetch URL sequentially by key
 				resp, err := http.Get(url)
@@ -196,7 +194,19 @@ func TestConcurrencyGroupWithTryGoMulti(t *testing.T) {
 	}
 }
 
+func TestConcurrencyGroupMultiDuplicateKeys(t *testing.T) {
+	t.Parallel()
+	cg := new(concgroup.Group)
+	cg.GoMulti([]string{"A", "A", "B"}, func() error {
+		return nil
+	})
+	if err := cg.Wait(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestConcurrencyGroupMultiAvoidDeadlock(t *testing.T) {
+	t.Parallel()
 	keys := []string{"A0", "B0", "C0"}
 	var otherKeysA, otherKeysB []string
 	for i := 1; i < 1000; i++ {
@@ -227,11 +237,11 @@ func TestConcurrencyGroupMultiAvoidDeadlock(t *testing.T) {
 			defer mu.Unlock()
 			return nil
 		})
-		// Waiging to lock tt.a
+		// Waiting to lock tt.a
 		cg.GoMulti(tt.a, func() error {
 			return nil
 		})
-		// Waiging to lock tt.b
+		// Waiting to lock tt.b
 		cg.GoMulti(tt.b, func() error {
 			return nil
 		})
