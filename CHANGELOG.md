@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.1.4](https://github.com/k1LoW/concgroup/compare/v1.1.3...v1.1.4) - 2026-09-28
+
+- ci: generate CREDITS with gocredits v1.0.0 from a make target by @k1LoW in https://github.com/k1LoW/concgroup/pull/27
+
 ## [v1.1.3](https://github.com/k1LoW/concgroup/compare/v1.1.2...v1.1.3) - 2026-07-13
 
 - chore(deps): bump the dependencies group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/k1LoW/concgroup/pull/12
